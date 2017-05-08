@@ -3,16 +3,11 @@ from time import time
 
 import numpy as np
 import matplotlib.pyplot as plt
+from mpl_toolkits.basemap import Basemap
 
 from dataset import fetch_species_distributions, construct_grids
 from sklearn.datasets.base import Bunch
 from sklearn import svm, metrics
-
-try:
-    from mpl_toolkits.basemap import Basemap
-    basemap = True
-except ImportError:
-    basemap = False
 
 
 def create_species_bunch(species_name, train, test, coverages, xgrid, ygrid):
@@ -43,7 +38,7 @@ def plot_species_distribution(species=("bradypus_variegatus_0",
 
     xgrid, ygrid = construct_grids(data)
 
-    #X, Y = np.meshgrid(xgrid, ygrid)
+    # X, Y = np.meshgrid(xgrid, ygrid)
     X, Y = np.meshgrid(xgrid, ygrid[::-1])
 
     BV_bunch = create_species_bunch(species[0], data.train, data.test,
@@ -57,12 +52,14 @@ def plot_species_distribution(species=("bradypus_variegatus_0",
                               np.random.randint(low=0, high=data.Nx,
                                                 size=10000)].T
 
+    # land or water
     land_reference = data.coverages[6]
 
     for i, species in enumerate([BV_bunch, MM_bunch]):
         print('_' * 80)
         print("Modeling distribution of species '%s'" % species.name)
 
+        # Standardize features
         mean = species.cov_train.mean(axis=0)
         std = species.cov_train.std(axis=0)
         train_cover_std = (species.cov_train - mean) / std
@@ -73,15 +70,12 @@ def plot_species_distribution(species=("bradypus_variegatus_0",
         print("done.")
 
         plt.subplot(1, 2, i+1)
-        if basemap:
-            print(" - plot coastlines using basemap")
-            m = Basemap(projection='cyl', llcrnrlat=Y.min(),
-                        urcrnrlat=Y.max(), llcrnrlon=X.min(),
-                        urcrnrlon=X.max(), resolution='c')
-            m.drawcoastlines()
-            m.drawcountries()
-        else:
-            pass
+        print(" - plot coastlines using basemap")
+        m = Basemap(projection='cyl', llcrnrlat=Y.min(),
+                    urcrnrlat=Y.max(), llcrnrlon=X.min(),
+                    urcrnrlon=X.max(), resolution='c')
+        m.drawcoastlines()
+        m.drawcountries()
 
         print(" - predict species distribution")
 
@@ -98,15 +92,15 @@ def plot_species_distribution(species=("bradypus_variegatus_0",
         Z[land_reference == -9999] = -9999
 
         # plot contours of the prediction
-        plt.contourf(X, Y, Z, levels=levels, cmap=plt.cm.Reds)
+        plt.contourf(X, Y, Z, levels=levels, cmap=plt.cm.Blues)
         plt.colorbar(format='%.2f')
 
         # scatter training/testing points
         plt.scatter(species.pts_train['dd long'], species.pts_train['dd lat'],
-                    s=2 ** 2, c='black',
+                    s=2 ** 2, c='yellow',
                     marker='^', label='train')
         plt.scatter(species.pts_test['dd long'], species.pts_test['dd lat'],
-                    s=2 ** 2, c='green',
+                    s=2 ** 2, c='red',
                     marker='x', label='test')
         plt.legend()
         plt.title(species.name)
